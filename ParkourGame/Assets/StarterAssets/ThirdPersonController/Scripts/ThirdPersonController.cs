@@ -65,7 +65,23 @@ namespace StarterAssets
     [Tooltip("What layers the character uses as ground")]
     public LayerMask GroundLayers;
 
-    [Header("Cinemachine")]// CAMERA----------------------------------------------------------------------------------------
+		[Header("Ledge Grab")]
+		//[Space(10)]
+		[Tooltip("The max distance the boxcast checks from the player for a ledge.")]
+		public float LedgeGrabDistance = 0.2f;
+
+		[Tooltip("The width of the box for the ledge check boxcast.")]
+		public float LedgeGrabWidth = 0.2f;
+
+		[Tooltip("The vertical offset of the box for the ledge check boxcast.")]
+		public float LedgeGrabYOffset = 0.2f;
+		
+    public RaycastHit LedgeHit;
+		public bool Hanging = false;
+
+
+
+		[Header("Cinemachine")]// CAMERA----------------------------------------------------------------------------------------
     [Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
     public GameObject CinemachineCameraTarget;
 
@@ -92,7 +108,6 @@ namespace StarterAssets
     private float _rotationVelocity;
     private float _verticalVelocity;
     private float _terminalVelocity = 53.0f;
-    private bool _hanging = false;
 
 		// timeout deltatime--------------------------------------------------------------------------------------------
 		private float _jumpTimeoutDelta;
@@ -193,7 +208,7 @@ namespace StarterAssets
 		// CHARACTER ABILITIES/ ACTIONS   THESE ARE CALLED IN UPDATE-------------------------------------------------------------------
     private void GroundedCheck()
     {
-      if(!_hanging) {
+      if(!Hanging) {
       // set sphere position, with offset
         Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset,
           transform.position.z);
@@ -272,7 +287,7 @@ namespace StarterAssets
 
       // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
       // if there is a move input rotate player when the player is moving
-      if (_input.move != Vector2.zero && !_hanging)
+      if (_input.move != Vector2.zero && !Hanging)
       {
         _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
         float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,RotationSmoothTime);
@@ -285,9 +300,10 @@ namespace StarterAssets
       Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
 
       // move the player
-      if(_hanging)
+      if(Hanging)
       {
         //if hanging, don't move the player
+        //TODO if hanging, only allow for movement parallel to the ledge
 				_controller.Move(Vector3.zero);
 			}
       else
@@ -307,38 +323,21 @@ namespace StarterAssets
     //LEDGE HANG
     private void LedgeGrab()
     {
-      if (_controller.velocity.y < 0 && !_hanging)
+      if (_controller.velocity.y < 0 && !Hanging && !Grounded)
       {
-        Debug.Log("_controller.velocity.y < 0 && !_hanging");
-        //TODO These numbers being multiplied by Vector3.up signify the allowed range of a grabbable object. It will most likely need to be tweaked
-        RaycastHit downHit;
-        Vector3 lineDownStart = (transform.position + Vector3.up*1.9f) + transform.forward * 0.7f;
-        Vector3 lineDownEnd = (transform.position + Vector3.up * 1.8f) + transform.forward * 0.2f;
-        //Physics.Linecast(lineDownStart, lineDownEnd, out downHit, LayerMask.GetMask("Ledge"));
-				Physics.Linecast(lineDownStart, lineDownEnd, out downHit, LayerMask.GetMask("Ledge"));
-				Debug.DrawLine(lineDownStart, lineDownEnd);
-
-        if(downHit.collider != null)
+        //Debug.Log("_controller.velocity.y < 0 && !Hanging && !Grounded");
+				Vector3 capsuleLeft = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * -0.3f;
+				Vector3 capsuleRight = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * 0.3f;
+        Physics.CapsuleCast(capsuleLeft, capsuleRight, LedgeGrabWidth, transform.forward, out LedgeHit, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
+        if(LedgeHit.collider != null)
         {
-          Debug.Log("downHit.collider != null");
-					//TODO These numbers being multiplied by Vector3.up signify the position the character should be moved to. It will most likely need to be tweaked
-					RaycastHit fwdHit;
-					Vector3 lineFwdStart = new Vector3(transform.position.x, downHit.point.y - 0.1f, transform.position.z);
-					Vector3 lineFwdEnd = new Vector3(transform.position.x, downHit.point.y - 0.1f, transform.position.z) + transform.forward;
-					Physics.Linecast(lineFwdStart, lineFwdEnd, out fwdHit, LayerMask.GetMask("Ledge"));
-					Debug.DrawLine(lineFwdStart, lineFwdEnd);
-
-          if(fwdHit.collider != null)
-          {
-						Debug.Log("fwdHit.collider != null");
-						_hanging = true;
-
-            Vector3 hangPos = new Vector3(fwdHit.point.x, downHit.point.y, fwdHit.point.z);
-            Vector3 offset = transform.forward * -0.1f + transform.up * -0.1f;
-            hangPos += offset;
-            transform.position = hangPos;
-            transform.forward = -fwdHit.normal;
-					}
+  				Hanging = true;
+          Vector3 hangPos = new Vector3(LedgeHit.point.x, LedgeHit.point.y, LedgeHit.point.z);
+          Debug.Log(string.Format("Ledge Hit: X: {0}, Y: {1}, Z:{2}", LedgeHit.point.x, LedgeHit.point.y, LedgeHit.point.z));
+          Vector3 offset = transform.forward * -0.1f + transform.up * -0.1f;
+          hangPos += offset;
+          transform.position = hangPos;
+          transform.forward = new Vector3(-LedgeHit.normal.x, 0.0f, -LedgeHit.normal.z);
 				}
 			}
     }
@@ -348,10 +347,8 @@ namespace StarterAssets
     //JUMPING/FALLING
     private void JumpAndGravity()
     {
-      if (Grounded || _hanging)
+      if (Grounded || Hanging)
       {
-
-
         // reset the fall timeout timer
         _fallTimeoutDelta = FallTimeout;
 
@@ -381,9 +378,9 @@ namespace StarterAssets
           }
           
           //allows to jump out of hanging
-          if(_hanging)
+          if(Hanging)
           {
-            _hanging = false;
+            Hanging = false;
           }
         }
 
@@ -417,7 +414,7 @@ namespace StarterAssets
       }
 
       // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
-      if (_verticalVelocity < _terminalVelocity && !_hanging)
+      if (_verticalVelocity < _terminalVelocity && !Hanging)
       {
         _verticalVelocity += Gravity * Time.deltaTime;
       }
@@ -444,6 +441,27 @@ namespace StarterAssets
       Gizmos.DrawSphere(
         new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z),
         GroundedRadius);
+
+			Vector3 boxCenter = (transform.position + Vector3.up * 1.9f) + transform.forward * 0.7f;
+			Vector3 lineDownEnd = (transform.position + Vector3.up * 1.8f) + transform.forward * 0.2f;
+
+      //Physics.Linecast(lineDownStart, lineDownEnd, out downHit, LayerMask.GetMask("Ledge"));
+      //Physics.Linecast(lineDownStart, lineDownEnd, out downHit, LayerMask.GetMask("Ledge"));
+      //Physics.BoxCast(boxCenter, transform.localScale * 0.5f, transform.forward, out ledgeHit);
+
+      Color bigRed = new Color(1.0f, 0.0f, 0.0f, 0.85f);
+
+			if (Hanging)
+      {
+
+
+				Vector3 capsuleLeft = LedgeHit.point + transform.right * -0.3f;
+				Vector3 capsuleRight = LedgeHit.point + transform.right * 0.3f;
+
+				Gizmos.color = bigRed;
+        Gizmos.DrawSphere(capsuleLeft, LedgeGrabWidth);
+				Gizmos.DrawSphere(capsuleRight, LedgeGrabWidth);
+      }
     }
 
 
