@@ -77,6 +77,7 @@ namespace StarterAssets
 		public float LedgeGrabYOffset = 0.2f;
 		
     public RaycastHit LedgeHit;
+    public RaycastHit LedgeCheck;
 		public bool Hanging = false;
 
 
@@ -302,9 +303,7 @@ namespace StarterAssets
       // move the player
       if(Hanging)
       {
-        //if hanging, don't move the player
-        //TODO if hanging, only allow for movement parallel to the ledge
-				_controller.Move(Vector3.zero);
+        LedgeMovement(inputDirection);
 			}
       else
       {
@@ -342,6 +341,34 @@ namespace StarterAssets
 			}
     }
 
+
+    private void LedgeMovement(Vector3 inputDirection)
+    {
+      //if hanging, only move the player to the left or right from where they're facing
+      //unless the ledge ends
+
+      //TODO SphereCast in -indputDirection.x to see fi there's ledge there, and if so then allow for movement
+			Vector3 MoveDirection = Vector3.Cross(transform.forward, Vector3.up);
+
+      Vector3 sphereCenter = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * -0.3f * -inputDirection.x;
+      Physics.SphereCast(sphereCenter, LedgeGrabWidth, transform.forward, out LedgeCheck, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
+      
+      //Physics.CapsuleCast(capsuleLeft, capsuleRight, LedgeGrabWidth, transform.forward, out LedgeHit, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
+			
+      //This if check makes the position bug out whenever you grab a ledge- it set the player way too high.
+      //  It works though, if you have a different if statement, grab a ledge, and revert the if statement change, if properly blocks you if you try to move too far
+      //ANYTHING ELSE makes the position correct while grabbing a ledge, but it doesn't do a proper check if a ledge is available to grab. Even if the check is empty
+      if (LedgeCheck.collider != null)
+			{
+				Debug.Log(string.Format("LedgeCheck: X: {0}, Y: {1}, Z:{2}", LedgeCheck.point.x, LedgeCheck.point.y, LedgeCheck.point.z));
+			  _controller.Move(MoveDirection * -inputDirection.x * (_speed * Time.deltaTime)/1.25f);
+			}
+
+
+
+
+
+		}
 
 
     //JUMPING/FALLING
@@ -461,7 +488,11 @@ namespace StarterAssets
 				Gizmos.color = bigRed;
         Gizmos.DrawSphere(capsuleLeft, LedgeGrabWidth);
 				Gizmos.DrawSphere(capsuleRight, LedgeGrabWidth);
-      }
+
+				Gizmos.DrawSphere(LedgeCheck.point, LedgeGrabWidth);
+
+
+			}
     }
 
 
