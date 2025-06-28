@@ -65,16 +65,12 @@ namespace StarterAssets
     [Tooltip("What layers the character uses as ground")]
     public LayerMask GroundLayers;
 
-		[Header("Ledge Grab")]
-		//[Space(10)]
-		[Tooltip("The max distance the boxcast checks from the player for a ledge.")]
-		public float LedgeGrabDistance = 0.2f;
+    [Header("Ledge Grab")]
+    //[Space(10)]
+    [Tooltip("The max distance the boxcast checks from the player for a ledge.")]
+    public GameObject LedgeGrabBox;
 
-		[Tooltip("The width of the box for the ledge check boxcast.")]
-		public float LedgeGrabWidth = 0.2f;
-
-		[Tooltip("The vertical offset of the box for the ledge check boxcast.")]
-		public float LedgeGrabYOffset = 0.2f;
+		
 		
     public RaycastHit LedgeHit;
     public RaycastHit LedgeCheck;
@@ -324,21 +320,28 @@ namespace StarterAssets
     {
       if (_controller.velocity.y < 0 && !Hanging && !Grounded)
       {
-        //Debug.Log("_controller.velocity.y < 0 && !Hanging && !Grounded");
-				Vector3 capsuleLeft = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * -0.3f;
-				Vector3 capsuleRight = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * 0.3f;
-        Physics.CapsuleCast(capsuleLeft, capsuleRight, LedgeGrabWidth, transform.forward, out LedgeHit, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
-        if(LedgeHit.collider != null)
+				//Debug.Log("_controller.velocity.y < 0 && !Hanging && !Grounded");
+				//Vector3 capsuleLeft = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * -0.3f;
+				//Vector3 capsuleRight = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * 0.3f;
+				//Physics.CapsuleCast(capsuleLeft, capsuleRight, LedgeGrabWidth, transform.forward, out LedgeHit, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
+
+				//if(LedgeHit.collider != null)
+				//Debug.Log("ReturnOnLedge: " + LedgeGrabBox.GetComponent<LedgeDetection>().ReturnOnLedge());
+				if (LedgeGrabBox.GetComponent<LedgeDetection>().ReturnOnLedge())
         {
   				Hanging = true;
-          Vector3 hangPos = new Vector3(LedgeHit.point.x, LedgeHit.point.y, LedgeHit.point.z);
-          Debug.Log(string.Format("Ledge Hit: X: {0}, Y: {1}, Z:{2}", LedgeHit.point.x, LedgeHit.point.y, LedgeHit.point.z));
-          Vector3 offset = transform.forward * -0.1f + transform.up * -0.1f;
+          Debug.Log("HANGING");
+          Vector3 hangPos = LedgeGrabBox.GetComponent<LedgeDetection>().ReturnGrabLocation();
+          Debug.Log(string.Format("Closest point to LedgeGrabBox.transform: X: {0}, Y: {1}, Z:{2}", hangPos.x, hangPos.y, hangPos.z));
+          Vector3 offset = transform.forward * -0.45f + transform.up * -2.1f;
           hangPos += offset;
           transform.position = hangPos;
 					Debug.Log(string.Format("hangPos: X: {0}, Y: {1}, Z:{2}", hangPos.x, hangPos.y, hangPos.z));
-					transform.forward = new Vector3(-LedgeHit.normal.x, 0.0f, -LedgeHit.normal.z);
-				}
+
+          //Vector3 hangDir = new Vector3(hangPos.x, 0.0f, hangPos.z);
+          //transform.forward = Vector3.Slerp(transform.forward, hangDir, .5f);
+          //transform.forward = new Vector3(hangPos.x - transform.forward.x, 0.0f, hangPos.z - transform.forward.z);
+        }
 			}
     }
 
@@ -352,8 +355,8 @@ namespace StarterAssets
       //Physics.CapsuleCast(capsuleLeft, capsuleRight, LedgeGrabWidth, transform.forward, out LedgeHit, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
 			Vector3 MoveDirection = Vector3.Cross(transform.forward, Vector3.up);
 
-      Vector3 sphereCenter = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * -0.3f * -inputDirection.x;
-      Physics.SphereCast(sphereCenter, LedgeGrabWidth, transform.forward, out LedgeCheck, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
+      //Vector3 sphereCenter = (transform.position + Vector3.up * LedgeGrabYOffset) + transform.forward * 0.1f + transform.right * -0.3f * -inputDirection.x;
+      //Physics.SphereCast(sphereCenter, LedgeGrabWidth, transform.forward, out LedgeCheck, LedgeGrabDistance, LayerMask.GetMask("Ledge"));
       
 			
       //This if check makes the position bug out whenever you grab a ledge- it set the player way too high.
@@ -471,31 +474,6 @@ namespace StarterAssets
       Gizmos.DrawSphere(
         new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z),
         GroundedRadius);
-
-			Vector3 boxCenter = (transform.position + Vector3.up * 1.9f) + transform.forward * 0.7f;
-			Vector3 lineDownEnd = (transform.position + Vector3.up * 1.8f) + transform.forward * 0.2f;
-
-      //Physics.Linecast(lineDownStart, lineDownEnd, out downHit, LayerMask.GetMask("Ledge"));
-      //Physics.Linecast(lineDownStart, lineDownEnd, out downHit, LayerMask.GetMask("Ledge"));
-      //Physics.BoxCast(boxCenter, transform.localScale * 0.5f, transform.forward, out ledgeHit);
-
-      Color bigRed = new Color(1.0f, 0.0f, 0.0f, 0.85f);
-
-			if (Hanging)
-      {
-
-
-				Vector3 capsuleLeft = LedgeHit.point + transform.right * -0.3f;
-				Vector3 capsuleRight = LedgeHit.point + transform.right * 0.3f;
-
-				Gizmos.color = bigRed;
-        Gizmos.DrawSphere(capsuleLeft, LedgeGrabWidth);
-				Gizmos.DrawSphere(capsuleRight, LedgeGrabWidth);
-
-				Gizmos.DrawSphere(LedgeCheck.point, LedgeGrabWidth);
-
-
-			}
     }
 
 
