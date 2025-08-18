@@ -110,6 +110,13 @@ namespace StarterAssets
 		// PRIVATE VARIABLES
 		// ======================================================================================
 
+
+		//State Machine
+		private StateMachine playerStateMachine;
+
+
+
+
 		// Cinemachine target rotation
 		private float _cinemachineTargetYaw;
 		private float _cinemachineTargetPitch;
@@ -190,6 +197,11 @@ namespace StarterAssets
 			// Initialize timers
 			_jumpTimeoutDelta = JumpTimeout;
 			_fallTimeoutDelta = FallTimeout;
+
+			//Initialize State Machine
+			playerStateMachine = new StateMachine();
+			playerStateMachine.Initialize(new GroundedState(this, playerStateMachine));
+
 		}
 
 		// ======================================================================================
@@ -200,12 +212,23 @@ namespace StarterAssets
 		{
 			_hasAnimator = TryGetComponent(out _animator);
 
+			playerStateMachine.HandleInput();
+			playerStateMachine.LogicUpdate();
+
+
 			// Main player actions
-			LedgeGrab();
-			JumpAndGravity();
-			GroundedCheck();
-			Move();
+			//LedgeGrab();
+			//JumpAndGravity();
+			//GroundedCheck();
+			//Move();
 		}
+
+		private void FixedUpdate()
+		{
+			playerStateMachine.PhysicsUpdate();
+		}
+
+
 
 		private void LateUpdate()
 		{
