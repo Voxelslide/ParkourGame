@@ -1,8 +1,12 @@
-﻿using UnityEditor.Experimental.GraphView;
+﻿using NUnit.Framework;
+using System;
+using TMPro;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
+using RangeAttribute = UnityEngine.RangeAttribute;
 #endif
 
 /*
@@ -104,15 +108,15 @@ namespace StarterAssets
 		[Header("Audio Clips")]
 		public AudioClip LandingAudioClip;
 		public AudioClip[] FootstepAudioClips;
-		[Range(0, 1)] public float FootstepAudioVolume = 0.5f;
+    [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
-		// ======================================================================================
-		// PRIVATE VARIABLES
-		// ======================================================================================
+    // ======================================================================================
+    // PRIVATE VARIABLES
+    // ======================================================================================
 
 
-		//State Machine
-		private StateMachine playerStateMachine;
+    //State Machine
+    private StateMachine playerStateMachine;
 
 
 
@@ -153,10 +157,25 @@ namespace StarterAssets
 		private const float _threshold = 0.01f;
 
 		// ======================================================================================
-		// INITIALIZATION
+		// GETTERS
 		// ======================================================================================
 
-		private bool IsCurrentDeviceMouse
+		public CharacterController GetCharacterControllerController => _controller;
+    public StarterAssetsInputs GetInput() => _input;
+    public Animator GetAnimator() => _animator;
+    public float GetSpeed() => _speed;
+    public float GetAnimationBlend() => _animationBlend;
+    public float GetTargetRotation() => _targetRotation;
+    public float GetRotationVelocity() => _rotationVelocity;
+    public float GetVerticalVelocity() => _verticalVelocity;
+    public float GetTerminalVelocity() => _terminalVelocity;
+
+
+    // ======================================================================================
+    // INITIALIZATION
+    // ======================================================================================
+
+    private bool IsCurrentDeviceMouse
 		{
 			get
 			{
@@ -200,7 +219,7 @@ namespace StarterAssets
 
 			//Initialize State Machine
 			playerStateMachine = new StateMachine();
-			playerStateMachine.Initialize(new GroundedState(this, playerStateMachine));
+			playerStateMachine.Initialize(new IdleState(this, playerStateMachine));
 
 		}
 
@@ -228,8 +247,6 @@ namespace StarterAssets
 			playerStateMachine.PhysicsUpdate();
 		}
 
-
-
 		private void LateUpdate()
 		{
 			CameraRotation();
@@ -247,6 +264,7 @@ namespace StarterAssets
 			_animIDFreeFall = Animator.StringToHash("FreeFall");
 			_animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
 		}
+
 
 		// ======================================================================================
 		// PLAYER ACTIONS
@@ -545,7 +563,7 @@ namespace StarterAssets
 		{
 			if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0)
 			{
-				int index = Random.Range(0, FootstepAudioClips.Length);
+				int index = UnityEngine.Random.Range(0, FootstepAudioClips.Length);
 				AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
 			}
 		}
