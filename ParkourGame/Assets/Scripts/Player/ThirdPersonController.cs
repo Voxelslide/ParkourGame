@@ -163,6 +163,7 @@ namespace StarterAssets
 		public CharacterController GetCharacterControllerController => _controller;
     public StarterAssetsInputs GetInput() => _input;
     public Animator GetAnimator() => _animator;
+		public bool IsGrounded() => Grounded;
     public float GetSpeed() => _speed;
     public float GetAnimationBlend() => _animationBlend;
     public float GetTargetRotation() => _targetRotation;
@@ -219,7 +220,7 @@ namespace StarterAssets
 
 			//Initialize State Machine
 			playerStateMachine = new StateMachine();
-			playerStateMachine.Initialize(new IdleState(this, playerStateMachine));
+			playerStateMachine.Initialize(new GroundedState(this, playerStateMachine));
 
 		}
 
@@ -233,13 +234,6 @@ namespace StarterAssets
 
 			playerStateMachine.HandleInput();
 			playerStateMachine.LogicUpdate();
-
-
-			// Main player actions
-			//LedgeGrab();
-			//JumpAndGravity();
-			//GroundedCheck();
-			//Move();
 		}
 
 		private void FixedUpdate()

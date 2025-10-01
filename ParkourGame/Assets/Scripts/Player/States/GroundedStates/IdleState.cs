@@ -1,4 +1,5 @@
 using StarterAssets;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -29,8 +30,7 @@ using UnityEngine.UI;
 
     if (input.move != Vector2.zero && input.sprint)
     {
-      //Coming soon
-      //stateMachine.ChangeState(new SprintState(controller, stateMachine));
+      stateMachine.ChangeState(new SprintState(controller, stateMachine));
       return;
     }
 
@@ -69,8 +69,8 @@ using UnityEngine.UI;
 
   public override void Exit()
   {
+    //Exit idle anim ("If it's not done automatically")
     Debug.Log("Exited Idle State");
-
 
   }
 
