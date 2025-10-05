@@ -63,7 +63,7 @@ using UnityEngine.UI;
   public override void PhysicsUpdate()
   {
     // Stop horizontal movement while idle
-    var characterController = controller.GetComponent<CharacterController>();
+    var characterController = controller.GetCharacterController();
     characterController.Move(new Vector3(0f, controller.GetVerticalVelocity(), 0f) * Time.deltaTime);
   }
 

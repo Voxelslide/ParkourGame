@@ -54,7 +54,7 @@ public class SprintState : PlayerState
   {
     var input = controller.GetInput();
     var animator = controller.GetAnimator();
-    var characterController = controller.GetComponent<CharacterController>();
+    var characterController = controller.GetCharacterController();
     var mainCamera = Camera.main;
 
 

@@ -48,7 +48,7 @@ using UnityEngine.UI;
     //Put walking logic here
     var input = controller.GetInput();
     var animator = controller.GetAnimator();
-    var characterController = controller.GetComponent<CharacterController>();
+    var characterController = controller.GetCharacterController();
     var mainCamera = Camera.main;
 
     // STEP 1: Decide movement speed----------------------------------------

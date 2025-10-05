@@ -54,7 +54,11 @@ namespace StarterAssets
 		[Tooltip("Acceleration/deceleration rate")]
 		public float SpeedChangeRate = 10.0f;
 
-		[Header("Player Jump & Gravity")]
+		[Tooltip("Used to keep direction and velocity when jumping/falling")]
+		[SerializeField]
+		private Vector3 Momentum;
+
+    [Header("Player Jump & Gravity")]
 		[Tooltip("Jump height (in meters)")]
 		public float JumpHeight = 1.2f;
 
@@ -67,7 +71,15 @@ namespace StarterAssets
 		[Tooltip("Delay before entering falling state (useful for stairs/ramps)")]
 		public float FallTimeout = 0.15f;
 
-		[Header("Player Grounded Check")]
+    [Tooltip("How responsive air movement is")]
+    [SerializeField, Range(0f, 1f)]
+    private float AirControl = 0.35f;
+    
+		
+		[Tooltip("Gradually reduce horizontal momentum over time")]
+    [SerializeField] private float MomentumDecay = 0.98f;
+
+    [Header("Player Grounded Check")]
 		[Tooltip("Current grounded state")]
 		public bool Grounded = true;
 
@@ -133,6 +145,7 @@ namespace StarterAssets
 		private float _verticalVelocity;
 		private float _terminalVelocity = 53.0f;
 
+
 		// Timers
 		private float _jumpTimeoutDelta;
 		private float _fallTimeoutDelta;
@@ -160,16 +173,41 @@ namespace StarterAssets
 		// GETTERS
 		// ======================================================================================
 
-		public CharacterController GetCharacterControllerController => _controller;
+		public CharacterController GetCharacterController() => _controller;
     public StarterAssetsInputs GetInput() => _input;
     public Animator GetAnimator() => _animator;
-		public bool IsGrounded() => Grounded;
+		//public bool IsGrounded() => Grounded;
+		public bool HasAnimator() => _hasAnimator;
     public float GetSpeed() => _speed;
     public float GetAnimationBlend() => _animationBlend;
     public float GetTargetRotation() => _targetRotation;
     public float GetRotationVelocity() => _rotationVelocity;
     public float GetVerticalVelocity() => _verticalVelocity;
+    public float GetAirControl() => AirControl;
     public float GetTerminalVelocity() => _terminalVelocity;
+    public float GetMomentumDecay() => MomentumDecay;
+
+    public Vector3 GetMomentum() => Momentum;
+    public void SetMomentum(Vector3 newMomentum) => Momentum = newMomentum;
+
+
+
+    public float GetJumpTimeoutDelta() => _jumpTimeoutDelta;
+    public void SetJumpTimeoutDelta(float delta)
+    {
+      _jumpTimeoutDelta = delta;
+    }
+
+    public float GetFallTimeoutDelta() => _fallTimeoutDelta;
+
+    public void SetFallTimeoutDelta(float delta)
+		{
+			_fallTimeoutDelta = delta;
+		}
+    public void SetVerticalVelocity(float vel)
+		{
+			_verticalVelocity = vel;
+		} 
 
 
     // ======================================================================================
@@ -232,14 +270,16 @@ namespace StarterAssets
 		{
 			_hasAnimator = TryGetComponent(out _animator);
 
-			playerStateMachine.HandleInput();
+
+      playerStateMachine.HandleInput();
 			playerStateMachine.LogicUpdate();
 		}
 
 		private void FixedUpdate()
 		{
 			playerStateMachine.PhysicsUpdate();
-		}
+
+    }
 
 		private void LateUpdate()
 		{
@@ -260,24 +300,41 @@ namespace StarterAssets
 		}
 
 
-		// ======================================================================================
-		// PLAYER ACTIONS
-		// ======================================================================================
+    // ======================================================================================
+    // PLAYER ACTIONS
+    // ======================================================================================
 
-		// Check if player is grounded (sphere check)
-		private void GroundedCheck()
-		{
-			if (!Hanging)
-			{
-				Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
-				Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+    // Check if player is grounded (sphere check)
 
-				if (_hasAnimator)
-				{
-					_animator.SetBool(_animIDGrounded, Grounded);
-				}
-			}
-		}
+    public bool IsGrounded()
+    {
+      // Calculate the sphere position for checking
+      Vector3 spherePosition = new Vector3(
+          transform.position.x,
+          transform.position.y - GroundedOffset,
+          transform.position.z
+      );
+
+      // Perform the check
+      bool isGrounded = Physics.CheckSphere(
+          spherePosition,
+          GroundedRadius,
+          GroundLayers,
+          QueryTriggerInteraction.Ignore
+      );
+
+      // Optionally update the animator, but ONLY if the animator exists
+      if (_hasAnimator)
+      {
+        _animator.SetBool(_animIDGrounded, isGrounded);
+      }
+
+      // Cache internally if you still want a public "Grounded" property
+      Grounded = isGrounded;
+
+      return isGrounded;
+    }
+
 
 		// Handles camera rotation from input
 		private void CameraRotation()
@@ -541,7 +598,7 @@ namespace StarterAssets
 			Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
 			Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
 
-			Gizmos.color = Grounded ? transparentGreen : transparentRed;
+			Gizmos.color = IsGrounded() ? transparentGreen : transparentRed;
 
 			Gizmos.DrawSphere(
 				new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z),
