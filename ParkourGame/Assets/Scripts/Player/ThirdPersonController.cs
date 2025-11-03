@@ -74,9 +74,14 @@ namespace StarterAssets
     [Tooltip("How responsive air movement is")]
     [SerializeField, Range(0f, 1f)]
     private float AirControl = 0.35f;
-    
-		
-		[Tooltip("Gradually reduce horizontal momentum over time")]
+
+    [Tooltip("How long after leaving ground you can still jump.")]
+    public float CoyoteTime = 0.15f;
+
+    [Tooltip("How long before landing a jump input will be buffered.")]
+    public float JumpBufferTime = 0.15f;
+
+    [Tooltip("Gradually reduce horizontal momentum over time")]
     [SerializeField] private float MomentumDecay = 0.98f;
 
     [Header("Player Grounded Check")]
@@ -149,9 +154,11 @@ namespace StarterAssets
 		// Timers
 		private float _jumpTimeoutDelta;
 		private float _fallTimeoutDelta;
+    [HideInInspector] public float _coyoteTimeCounter = 0f;
+    [HideInInspector] public float _jumpBufferCounter = 0f;
 
-		// Animation IDs
-		private int _animIDSpeed;
+    // Animation IDs
+    private int _animIDSpeed;
 		private int _animIDGrounded;
 		private int _animIDJump;
 		private int _animIDFreeFall;
@@ -182,7 +189,6 @@ namespace StarterAssets
     public float GetAnimationBlend() => _animationBlend;
     public float GetTargetRotation() => _targetRotation;
     public float GetRotationVelocity() => _rotationVelocity;
-    public float GetVerticalVelocity() => _verticalVelocity;
     public float GetAirControl() => AirControl;
     public float GetTerminalVelocity() => _terminalVelocity;
     public float GetMomentumDecay() => MomentumDecay;
@@ -204,6 +210,7 @@ namespace StarterAssets
 		{
 			_fallTimeoutDelta = delta;
 		}
+    public float GetVerticalVelocity() => _verticalVelocity;
     public void SetVerticalVelocity(float vel)
 		{
 			_verticalVelocity = vel;
@@ -269,7 +276,6 @@ namespace StarterAssets
 		private void Update()
 		{
 			_hasAnimator = TryGetComponent(out _animator);
-
 
       playerStateMachine.HandleInput();
 			playerStateMachine.LogicUpdate();

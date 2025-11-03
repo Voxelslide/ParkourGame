@@ -30,18 +30,11 @@ public class FallState : PlayerState
 
   public override void HandleInput()
   {
-    //CHeck for grounded
-    //if so go to grounded (or a landing state for a landing/roll anim [in the fu8ture])
-
-    stateMachine.ChangeState(new GroundedState(controller, stateMachine));
-    return;
-
-
-
   }
 
   public override void LogicUpdate()
   {
+    
     ApplyGravity();
     UpdateAirMovement();
 
@@ -53,12 +46,17 @@ public class FallState : PlayerState
     //return;
     //}
 
+    UpdateAnimation();
+
     if (controller.IsGrounded())
     {
       stateMachine.ChangeState(new GroundedState(controller, stateMachine));
       return;
     }
-    UpdateAnimation();
+    else if (controller._coyoteTimeCounter > 0)
+    {
+      controller._coyoteTimeCounter -= Time.deltaTime;
+    }
   }
 
   
@@ -127,11 +125,15 @@ public class FallState : PlayerState
     currentMomentum *= controller.GetMomentumDecay();
 
     // Move horizontally with preserved momentum
-    characterController.Move(currentMomentum * Time.deltaTime);
+    //characterController.Move(currentMomentum * Time.deltaTime);
+    var finalMove = new Vector3(currentMomentum.x * Time.deltaTime, controller.GetVerticalVelocity() * Time.deltaTime, currentMomentum.z * Time.deltaTime);
+
+    characterController.Move(finalMove);
+    
 
     // Apply vertical velocity from gravity
-    Vector3 verticalMove = new Vector3(0f, controller.GetVerticalVelocity(), 0f);
-    characterController.Move(verticalMove * Time.deltaTime);
+    //Vector3 verticalMove = new Vector3(0f, , 0f);
+    //characterController.Move(verticalMove * Time.deltaTime);
   }
 
 }

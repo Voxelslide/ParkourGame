@@ -53,11 +53,20 @@ public class GroundedState : PlayerState
     var input = controller.GetInput();
 
     // Check jump -> exit Grounded entirely
-    if (input.jump)
+    if (controller._jumpBufferCounter > 0 && controller._coyoteTimeCounter > 0)
     {
-      //Coming soon
-      //stateMachine.ChangeState(new JumpState(controller, stateMachine));
+      stateMachine.ChangeState(new JumpState(controller, stateMachine));
       return;
+    }
+
+    // Handle jump buffering
+    if (controller.GetInput().jump)
+    {
+      controller._jumpBufferCounter = controller.JumpBufferTime; // reset timer whenever jump is pressed
+    }
+    else if (controller._jumpBufferCounter > 0)
+    {
+      controller._jumpBufferCounter -= Time.deltaTime;
     }
 
     // Delegate input handling to sub-state machine
@@ -72,6 +81,13 @@ public class GroundedState : PlayerState
     // Check for falling (not grounded anymore) -> exit Grounded
     if (!controller.IsGrounded())
     {
+      //count down coyote time
+      if (controller._coyoteTimeCounter > 0)
+      {
+        controller._coyoteTimeCounter -= Time.deltaTime;
+      }
+
+
       var fallDelta = controller.GetFallTimeoutDelta();
       if (fallDelta > 0.0f)
       {
@@ -86,6 +102,12 @@ public class GroundedState : PlayerState
       stateMachine.ChangeState(new FallState(controller, stateMachine));
       return;
     }
+    else if (controller.IsGrounded())
+    {
+      // Reset coyote timer when grounded
+      controller._coyoteTimeCounter = controller.CoyoteTime;
+    }
+
 
     // Reset fall timer if grounded
     controller.SetFallTimeoutDelta(controller.FallTimeout);
